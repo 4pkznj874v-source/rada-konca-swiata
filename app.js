@@ -133,13 +133,21 @@ function renderHome(){
   stopTimers(); state.mode=null;
   const joinParam=new URLSearchParams(location.search).get('join')||'';
   root.innerHTML=`<div class="home"><div class="card home-card"><div class="eyebrow">Strategiczna gra społeczna · prototyp</div><div class="title">RADA<br>KOŃCA ŚWIATA</div><p class="subtitle">TV jest wspólnym centrum dowodzenia. Telefony pokazują prywatne role, cele, informacje i głosowanie.</p><div class="home-actions"><button class="btn primary big" id="hostBtn">UTWÓRZ GRĘ NA TV / TABLECIE</button><button class="btn big" id="joinBtn">DOŁĄCZ Z TELEFONU</button></div><div id="joinBox" class="join-box" style="display:${joinParam?'grid':'none'}"><input class="input" id="roomInput" maxlength="4" inputmode="numeric" placeholder="Kod pokoju" value="${esc(joinParam)}"><input class="input" id="nameInput" maxlength="16" placeholder="Twoje imię"><button class="btn green" id="joinGo">DOŁĄCZ</button></div><p class="mini" style="margin-top:18px">Prototyp: 3-8 graczy · 8 rund · ok. 25-40 min. Punkty są publiczne, ale powód ich zdobywania pozostaje tajny.</p></div></div>`;
-  document.getElementById('hostBtn').onclick=createRoom;
+document.getElementById('hostBtn').onclick=async()=>{
+  try{
+    bgMusic.volume = 0.3;
+    await bgMusic.play();
+  }catch(e){
+    console.error("Błąd muzyki:", e);
+  }
+
+  createRoom();
+};
   document.getElementById('joinBtn').onclick=()=>document.getElementById('joinBox').style.display='grid';
   document.getElementById('joinGo').onclick=joinRoom;
 }
 
 async function createRoom(){
-  startMusic();
   let code=''; let exists=true;
   while(exists){ code=String(Math.floor(1000+Math.random()*9000)); exists=(await get(ref(db,`rooms/${code}`))).exists(); }
   const room={createdAt:Date.now(),phase:'lobby',round:0,host:true,world:{population:67,food:58,energy:61,order:54,tech:32,hope:52},players:{},history:{}};
