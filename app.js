@@ -3,7 +3,14 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.2.1/firebas
 import {
   getDatabase, ref, set, get, update, onValue, remove
 } from 'https://www.gstatic.com/firebasejs/12.2.1/firebase-database.js';
+const bgMusic = document.getElementById("bgMusic");
 
+function startMusic() {
+  if (!bgMusic) return;
+
+  bgMusic.volume = 0.22;
+  bgMusic.play().catch(() => {});
+}
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const root = document.getElementById('app');
@@ -119,19 +126,6 @@ function fmtDelta(n){ return `${n>0?'+':''}${n}`; }
 function roleForIndex(i){return ROLES[i%ROLES.length];}
 function playerColor(i){return ['#a67dff','#44df88','#53b6ff','#ff6680','#ffc640','#5be0d5','#d8e4ee','#8de36e'][i%8];}
 
-function startAudio(){
-  if(state.audio) return;
-  try{
-    const Ctx=window.AudioContext||window.webkitAudioContext; if(!Ctx) return;
-    const ctx=new Ctx(); const master=ctx.createGain(); master.gain.value=.055; master.connect(ctx.destination);
-    const osc1=ctx.createOscillator(),osc2=ctx.createOscillator(),g1=ctx.createGain(),g2=ctx.createGain();
-    osc1.type='sine';osc1.frequency.value=55; g1.gain.value=.35; osc1.connect(g1).connect(master);
-    osc2.type='triangle';osc2.frequency.value=82.4; g2.gain.value=.14; osc2.connect(g2).connect(master);
-    const lfo=ctx.createOscillator(),lg=ctx.createGain(); lfo.frequency.value=.07; lg.gain.value=.08; lfo.connect(lg).connect(g1.gain);
-    osc1.start();osc2.start();lfo.start(); state.audio={ctx,master,osc1,osc2,lfo};
-  }catch(e){}
-}
-
 function stopTimers(){ if(state.timer){clearInterval(state.timer);state.timer=null;} if(state.introTimer){clearTimeout(state.introTimer);state.introTimer=null;} }
 function toast(msg){ const d=document.createElement('div');d.className='toast';d.textContent=msg;document.body.appendChild(d);setTimeout(()=>d.remove(),2200); }
 
@@ -145,7 +139,7 @@ function renderHome(){
 }
 
 async function createRoom(){
-  startAudio();
+  startMusic();
   let code=''; let exists=true;
   while(exists){ code=String(Math.floor(1000+Math.random()*9000)); exists=(await get(ref(db,`rooms/${code}`))).exists(); }
   const room={createdAt:Date.now(),phase:'lobby',round:0,host:true,world:{population:67,food:58,energy:61,order:54,tech:32,hope:52},players:{},history:{}};
@@ -153,7 +147,6 @@ async function createRoom(){
 }
 
 async function joinRoom(){
-  startAudio();
   const code=(document.getElementById('roomInput').value||'').trim(); const name=(document.getElementById('nameInput').value||'').trim();
   if(!/^\d{4}$/.test(code)||!name){toast('Wpisz 4-cyfrowy kod i imię.');return;}
   const snap=await get(ref(db,`rooms/${code}`)); if(!snap.exists()){toast('Nie znaleziono pokoju.');return;}
@@ -197,7 +190,6 @@ function renderHostLobby(room){
 
 function renderIntro(room){
   root.innerHTML=`<div class="intro"><div class="intro-bg"></div><div class="stars"></div><div class="city"></div><div class="scanline"></div><button class="btn ghost intro-skip" id="skipIntro">POMIŃ PROLOG</button><div class="intro-copy"><div class="eyebrow">PROLOG</div><h1>RADA KOŃCA ŚWIATA</h1><p id="introLine"></p></div></div>`;
-  startAudio();
   const elapsed=Math.max(0,Date.now()-(room.introStartedAt||Date.now())); const step=Math.min(INTRO_LINES.length-1,Math.floor(elapsed/3300));
   document.getElementById('introLine').textContent=INTRO_LINES[step];
   clearTimeout(state.introTimer); state.introTimer=setTimeout(async()=>{
